@@ -28,7 +28,6 @@ module aptos_swap::core {
         admin_address: address,
         lp_fee: u64,
         protocol_fee: u64,
-        ui_fee: u64,
         is_global_pause: bool
     }
 
@@ -59,7 +58,6 @@ module aptos_swap::core {
             admin_address: signer::address_of(resource_account),
             lp_fee: 25, // 0.25%
             protocol_fee: 5, // 0.05%
-            ui_fee: 5, // 0.05%
             is_global_pause: false
         });
     }
