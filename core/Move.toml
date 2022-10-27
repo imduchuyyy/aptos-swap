@@ -1,7 +1,20 @@
 [package]
 name = 'core'
 version = '1.0.0'
+
+[addresses]
+aptos_swap = "0x1b0031c5695b1745262577f7a5989e22d1ec6683edf6569b9d0818781b45db50"
+
+
 [dependencies.AptosFramework]
 git = 'https://github.com/aptos-labs/aptos-core.git'
 rev = 'main'
 subdir = 'aptos-move/framework/aptos-framework'
+
+[dependencies.UQ64x64]
+git = "https://github.com/pontem-network/UQ64x64.git"
+rev = "v0.3.7"
+
+[dependencies.U256]
+git = "https://github.com/pontem-network/U256.git"
+rev = "v0.3.8"
