@@ -2,6 +2,8 @@ module aptos_swap::router {
     use std::signer;
     use std::event;
 
+    use aptos_swap::core;
+
     public entry fun add_liquidity<CoinX, CoinY>() {
     }
 
