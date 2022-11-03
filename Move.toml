@@ -4,7 +4,7 @@ version = '1.0.0'
 
 [addresses]
 aptos_swap = "0x1b0031c5695b1745262577f7a5989e22d1ec6683edf6569b9d0818781b45db50"
-
+aptos_swap_lp = "0xd996953be73da3454aede1234b0711a69dcba098f5873d8f7ba8c73dcbfb1957"
 
 [dependencies.AptosFramework]
 git = 'https://github.com/aptos-labs/aptos-core.git'

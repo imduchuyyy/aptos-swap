@@ -15,7 +15,10 @@ module aptos_swap::core {
     use uq64x64::uq64x64;
 
     use aptos_swap::helper;
-    use aptos_swap::lp_coin::LPCoin;
+    use aptos_swap_lp::lp_coin::LPCoin;
+    use aptos_swap::resource;
+
+    friend aptos_swap::router;
 
     const MINIMUM_LIQUIDITY: u64 = 1000;
 
@@ -80,18 +83,18 @@ module aptos_swap::core {
         last_price_y_cumulative: u128,
     }
     
-    fun get_resource_account_signer(): signer acquires GlobalConfig {
+    public(friend) fun get_pool_account(): signer acquires GlobalConfig {
         let signer_cap = &borrow_global<GlobalConfig>(@aptos_swap).signer_cap;
         account::create_signer_with_capability(signer_cap)
     }
 
     /// Initialize this module: create a resource account, a collection, and a token data id
-    fun init_module(resource_account: &signer) {
-        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource_account, @0xc98);
+    fun init_module(admin: &signer) {
+        let signer_cap = resource::retrieve_signer_cap(admin);
 
-        move_to(resource_account, GlobalConfig{
-            signer_cap: resource_signer_cap,
-            admin_address: signer::address_of(resource_account),
+        move_to(admin, GlobalConfig{
+            signer_cap,
+            admin_address: signer::address_of(admin),
             lp_fee: 25, // 0.25%
             protocol_fee: 5, // 0.05%
             is_global_pause: false
@@ -127,7 +130,7 @@ module aptos_swap::core {
 
         lp.last_block_timestamp = now;
 
-        let resource_account_signer = get_resource_account_signer();
+        let resource_account_signer = get_pool_account();
         let events = borrow_global_mut<Events<CoinX, CoinY>>(signer::address_of(&resource_account_signer));
         event::emit_event(&mut events.pool_updated_event, PoolUpdatedEvent {
             reserve_x: balance_x,
@@ -171,7 +174,7 @@ module aptos_swap::core {
     public fun mint<CoinX, CoinY>(coin_x: Coin<CoinX>, coin_y: Coin<CoinY>): Coin<LPCoin<CoinX, CoinY>> acquires Pool, GlobalConfig, Events {
         assert!(helper::compare<CoinX, CoinY>(), 101);
         
-        let resource_account_signer = get_resource_account_signer();
+        let resource_account_signer = get_pool_account();
         assert!(exists<Pool<CoinX, CoinY>>(signer::address_of(&resource_account_signer)), 102);
 
         let amount_x = coin::value(&coin_x);
@@ -224,7 +227,7 @@ module aptos_swap::core {
     public fun burn<CoinX, CoinY>(coin_liquidity: Coin<LPCoin<CoinX, CoinY>>): (Coin<CoinX>, Coin<CoinY>) acquires Pool, GlobalConfig, Events {
         assert!(helper::compare<CoinX, CoinY>(), 101);
         
-        let resource_account_signer = get_resource_account_signer();
+        let resource_account_signer = get_pool_account();
         assert!(exists<Pool<CoinX, CoinY>>(signer::address_of(&resource_account_signer)), 102);
 
         let liquidity_amount = coin::value(&coin_liquidity);
@@ -268,7 +271,7 @@ module aptos_swap::core {
     public fun swap<CoinX, CoinY>(coin_x: Coin<CoinX>, coin_y: Coin<CoinY>, amount_x_out: u64, amount_y_out: u64): (Coin<CoinX>, Coin<CoinY>) acquires Pool, GlobalConfig, Events {
         assert!(helper::compare<CoinX, CoinY>(), 101);
         
-        let resource_account_signer = get_resource_account_signer();
+        let resource_account_signer = get_pool_account();
         assert!(exists<Pool<CoinX, CoinY>>(signer::address_of(&resource_account_signer)), 102);
         let global_config = borrow_global<GlobalConfig>(signer::address_of(&resource_account_signer));
 
@@ -309,12 +312,16 @@ module aptos_swap::core {
         (coin_x_out, coin_y_out)
     }
 
+    public fun is_existed_pool<CoinX, CoinY>(): bool {
+        exists<Pool<CoinX, CoinY>>(@aptos_swap_lp)
+    }
+
     /**
      * Entry function
      */
     public entry fun create_pool<CoinX, CoinY>() acquires GlobalConfig {
         assert!(helper::compare<CoinX, CoinY>(), 101);
-        let resource_account_signer = get_resource_account_signer();
+        let resource_account_signer = get_pool_account();
 
         let (lp_b, lp_f, lp_m) = coin::initialize<LPCoin<CoinX, CoinY>>(&resource_account_signer, utf8(b"AptosSwapLPToken"), utf8(b"ASLPCoin"), 8, true);
 
